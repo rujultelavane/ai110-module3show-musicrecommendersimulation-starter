@@ -2,60 +2,58 @@
 
 ## 1. Model Name  
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+**MoodMatch 1.0**
 
 ---
 
 ## 2. Intended Use  
 
-Describe what your recommender is designed to do and who it is for. 
+MoodMatch takes a simple taste profile and picks the top 5 songs from a small catalog that best match it.
 
-Prompts:  
+You tell it your favorite genre, favorite mood, a target energy level (0 to 1), and whether you like acoustic songs. It scores every song in the catalog and returns the highest-scoring ones, with a short list of reasons for each pick.
 
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+It assumes the user knows their own taste well enough to fill in those four fields, and that they'll type genre/mood exactly as it appears in the catalog (it does not fix typos or capitalization).
+
+This is a classroom project for learning how a scoring-based recommender works. It's not built for real users — the catalog is only 18 songs, and the code has known bugs (see Limitations and Bias) that would need fixing before any real use.
 
 ---
 
 ## 3. How the Model Works  
 
-Explain your scoring approach in simple language.  
+Every song gets a score, and the 5 highest-scoring songs win.
 
-Prompts:  
+The score is built from four pieces:
 
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
+- **Genre match**: if the song's genre is exactly your favorite genre, it earns 1 point. Otherwise, 0.
+- **Mood match**: same idea — exact match on mood earns 1 point.
+- **Energy similarity**: the closer the song's energy is to your target energy, the more points it earns, up to 4 points for a perfect match. This is worth the most of any single factor.
+- **Acoustic fit**: if you say you like acoustic songs and the song is acoustic (or you say you don't and it isn't), it gets a small +0.5 bonus. Getting it backwards costs -0.5.
 
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+All four pieces are added together for a total score, and the app shows the reasons behind each recommendation so you can see why a song was picked.
+
+The starter code only had placeholders (`# TODO`) for all of this — I wrote the actual scoring rules, then later doubled the energy weight (from up to 2 points to up to 4) and halved the genre weight (from 2 points to 1) to see how it changed the results.
 
 ---
 
 ## 4. Data  
 
-Describe the dataset the model uses.  
+The catalog has 18 songs, each with a title, artist, genre, mood, energy (0-1), tempo, valence, danceability, and acousticness (0-1).
 
-Prompts:  
+There are 15 different genres across those 18 songs (pop, lofi, rock, ambient, jazz, synthwave, indie pop, hip-hop, classical, folk, metal, r&b, country, house, reggae). Only "lofi" and "pop" have more than one song — every other genre has exactly one representative track. Moods are just as spread out (happy, chill, intense, moody, relaxed, focused, confident, melancholic, nostalgic, angry, romantic, playful, euphoric, carefree).
 
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
+I used the starter catalog as-is and didn't add or remove any songs.
+
+Because most genres only have one song, the dataset can't really show what "similar genre" recommendations would look like — it's too small and too spread out for that. It also skews toward mid-to-high energy tracks, so it's thin on very calm, low-energy music outside of a few lofi/classical/ambient tracks.
 
 ---
 
 ## 5. Strengths  
 
-Where does your system seem to work well  
+For a normal, well-formed profile, MoodMatch does what you'd expect. A pop/happy fan with a mid-high energy target got "Sunrise City" as the #1 pick — a song that's genuinely pop, happy, and close to that energy level. That matched my intuition.
 
-Prompts:  
+The scoring also correctly rewards songs that hit multiple criteria at once. A song that matches genre, mood, and energy all together clearly outscores one that only matches on one or two, which is the right behavior for a taste-based recommender.
 
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
+The explanation output (the +1.0 / +4.0 reason list) is a real strength — it makes it easy to see exactly why a song was recommended, which helped a lot when I was debugging weird results during testing.
 
 ---
 
@@ -67,22 +65,11 @@ The energy-weighting experiment revealed a filter-bubble effect: after doubling 
 
 ## 7. Evaluation  
 
-How you checked whether the recommender behaved as expected. 
-
-Prompts:  
-
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
-
-No need for numeric metrics unless you created some.
-
 I tested a normal fan, four fans with different genres but the same energy target, a fan whose genre/mood contradicts their energy request, mismatched capitalization, a genre/mood not in the collection, blank fields, and impossible energy values. The biggest surprise: energy overpowered everything else, and a capital letter was enough to erase a genre/mood match.
 
 ### Plain-Language Comparisons (Profile Pairs)
 
-- **"pop"/"happy" vs. "Pop"/"Happy":** Same top pick either way, but capitalizing it makes the system act like the person never stated a genre or mood — makes sense given it's an exact-text check, but it's not what a listener would expect.
+- **"pop"/"happy" vs. "Pop"/"Happy":** Same top pick either way, but capitalizing it makes the system act like the person never stated a genre or mood.
 - **Energy request of 1.5 vs. -0.5:** Asking above the max pulls in an unrelated high-energy metal song; asking below the min pulls in unrelated low-energy acoustic songs. The math always finds a "closest" song even when the number itself is nonsense.
 - **Blank genre/mood vs. a made-up genre/mood ("opera"/"ecstatic"):** Identical results. Makes sense mechanically (both fail the same exact-match check), but a blank field probably means "no preference," while a real-but-absent genre means "I have one, you just don't have it" — the system treats them the same.
 - **Same listener, original weights vs. doubled-energy/halved-genre weights:** Same winner, but the runner-up nearly caught up (lead shrank from ~1.6 points to under 1). Makes sense — energy now counts 4x more, so an energy-close song can compete better against a genre-perfect one.
@@ -264,23 +251,18 @@ KeyError: 'target_energy'
 
 ## 8. Future Work  
 
-Ideas for how you would improve the model next.  
+1. **Normalize genre/mood input.** Lowercase and trim both the catalog and the user's input before comparing, so "Pop" and "pop" count as the same thing. This fixes a real bug, not just a nice-to-have.
 
-Prompts:  
+2. **Add input validation.** Reject or clamp a `target_energy` outside `[0, 1]`, and give a clear error (instead of a crash) when a required field like `target_energy` is missing.
 
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
+3. **Improve diversity in the top 5.** Right now, once energy dominates the score, the top results can all cluster around the same energy level and feel repetitive. I'd add a rule that caps how many songs from the same artist or how similar the energy values can be among the top 5, so recommendations feel less like the same song five times.
 
 ---
 
 ## 9. Personal Reflection  
 
-A few sentences about your experience.  
+Building this showed me how much a recommender's "personality" comes down to a few weight numbers. Doubling the energy weight and halving the genre weight completely changed which users got treated as similar to each other, even though I didn't touch the underlying data at all.
 
-Prompts:  
+The most surprising thing was how fragile exact-match logic is. A single capital letter ("Pop" vs "pop") was enough to make the system act like I had no genre preference at all, even when a perfect match existed in the catalog. That's a bug I never would have noticed without deliberately testing weird inputs.
 
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+This changed how I think about recommendation apps I use every day — a "for you" list isn't some deep understanding of my taste, it's just a formula with weights someone chose, and small choices in that formula (or small bugs) can quietly push very different users toward the same results.

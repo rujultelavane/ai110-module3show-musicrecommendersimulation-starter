@@ -158,14 +158,4 @@ You will go deeper on this in your model card.
 
 ## Reflection
 
-Read and complete `model_card.md`:
-
-[**Model Card**](model_card.md)
-
-Write 1 to 2 paragraphs here about what you learned:
-
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
-
-
-
+My biggest learning moment during this process is how simple it was to incorporate a recommendation system when you figure out a formula for the algorithm to follow. These simple algorithms still can feel like personalized recommendations because the code can provide reasons for certain recommendations, which can make it feel more human-like. If I extended this project I think I would incorporate UI so that it would not be CLI but rather with GUI.
