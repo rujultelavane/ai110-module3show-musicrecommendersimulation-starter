@@ -17,17 +17,11 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world recommenders (Spotify, YouTube) blend content-based filtering (matching an item's own attributes) with collaborative filtering (patterns from other users). This simulation has no other users, so it prioritizes content-based: it matches a song's own features directly against one listener's stated preferences, weighting genre and mood highest since they're the clearest signals in a small catalog.
 
-Some prompts to answer:
+**`Song` features used:** `genre`, `mood` (exact match), `energy` (distance to target), `acousticness` (checked against `likes_acoustic`).
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
-
-You can include a simple diagram or bullet list if helpful.
+**`UserProfile` stores:** `favorite_genre`, `favorite_mood`, `target_energy`, `likes_acoustic`.
 
 ---
 
