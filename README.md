@@ -23,6 +23,40 @@ Real-world recommenders (Spotify, YouTube) blend content-based filtering (matchi
 
 **`UserProfile` stores:** `favorite_genre`, `favorite_mood`, `target_energy`, `likes_acoustic`.
 
+### Algorithm Recipe
+
+Each song is scored against the user's profile and the highest-scoring songs are returned.
+
+| Signal | Rule | Points |
+|---|---|---|
+| Genre | Exact match: `song.genre == user.favorite_genre` | **+2.0** |
+| Mood | Exact match: `song.mood == user.favorite_mood` | **+1.0** |
+| Energy | Similarity to target, not exact match | **up to +2.0** |
+| Acousticness | Checked against `likes_acoustic` | **±0.5** |
+
+```
+genre_score    = 2.0 if song.genre == user.favorite_genre else 0.0
+mood_score     = 1.0 if song.mood  == user.favorite_mood  else 0.0
+energy_score   = 2.0 * (1 - abs(song.energy - user.target_energy))
+
+if user.likes_acoustic and song.acousticness >= 0.6:
+    acoustic_score = +0.5
+elif not user.likes_acoustic and song.acousticness <= 0.3:
+    acoustic_score = +0.5
+elif user.likes_acoustic and song.acousticness <= 0.3:
+    acoustic_score = -0.5
+elif not user.likes_acoustic and song.acousticness >= 0.7:
+    acoustic_score = -0.5
+else:
+    acoustic_score = 0.0
+
+total_score = genre_score + mood_score + energy_score + acoustic_score
+```
+
+Genre outweighs mood 2:1 because genre is a stable, category-level preference, while mood is more situational. Energy gets 2.0 max weight but decays with distance from the target. Acousticness is treated as a soft nudge (±0.5) rather than a deciding factor, since it's a secondary preference.
+
+**Expected biases:** This system might over-prioritize genre and energy closeness, which means it can bury a song that's a near-perfect mood match but the "wrong" genre — even if that song is what the user actually wants to hear in the moment.
+
 ---
 
 ## Getting Started
